@@ -13,6 +13,16 @@ declare global {
   }
 }
 
+export interface UserPayload {
+  id: string;
+  // You can add other properties like email, role, etc.
+}
+
+// Extend the default Express Request type
+export interface RequestWithUser extends Request {
+  user?: UserPayload | null; // The 'user' property is optional and can be null
+}
+
 /**
  * Express middleware to verify a JSON Web Token (JWT) and authenticate the user.
  * If the token is valid, it attaches the user payload to the `req.user` property.
@@ -27,8 +37,7 @@ export const isAuthenticated = (
   res: Response,
   next: NextFunction
 ) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1]; // Format is "Bearer <TOKEN>"
+  const token = req.cookies.auth_token;
 
   if (!token) {
     return res.status(401).json({ message: 'Unauthorized: No token provided.' });
@@ -53,4 +62,36 @@ export const isAuthenticated = (
 
     next();
   });
+};
+
+export const decodeUserMiddleware = (req: RequestWithUser, res: Response, next: NextFunction) => {
+  try {
+    // --- This is the key change ---
+    const token = req.cookies.auth_token; 
+    const jwtSecret = process.env.JWT_SECRET;
+
+    if (token && jwtSecret) {
+      const decoded = jwt.verify(token, jwtSecret) as { id: string; email: string };
+      req.user = decoded;
+    } else {
+      req.user = null;
+    }
+  } catch (error) {
+    // If jwt.verify fails, treat as unauthenticated
+    req.user = null;
+  }
+  
+  // Always pass control to the next middleware or controller
+  next(); 
+};
+
+
+
+export const requireAuthMiddleware = (req: RequestWithUser, res: Response, next: NextFunction) => {
+  if (!req.user) {
+    return res.status(401).json({ message: 'Authentication required.' });
+  }
+  
+  // If we get here, the user is authenticated, so we can proceed
+  next();
 };

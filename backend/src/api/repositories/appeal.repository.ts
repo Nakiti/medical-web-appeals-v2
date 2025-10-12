@@ -101,12 +101,16 @@ export async function updateAppeal(
   data: Partial<any>
 ): Promise<Appeal | null> {
   try {
+    console.log("appealId", appealId)
+    console.log("userId", userId)
+    console.log("data", data)
     const appeal = await Appeal.findOne({
       where: { 
         id: appealId,
         userId 
       }
     });
+    console.log("appeal", appeal)
     
     if (!appeal) {
       return null;
@@ -148,11 +152,30 @@ export async function findAppealById(id: string): Promise<Appeal | null> {
 export async function updateAppealById(id: string, data: Partial<any>): Promise<Appeal | null> {
   try {
     const appeal = await Appeal.findByPk(id);
-    
+
+    console.log("da data", data)
     if (!appeal) {
       return null;
     }
 
+    // 1. Check if the incoming data includes a `parsedData` object to merge
+    if (data.parsedData && typeof data.parsedData === 'object') {
+      // 2. Get the existing data from the appeal instance (default to empty object if null)
+      const existingParsedData = appeal.getDataValue('parsedData') || {};
+
+      // 3. Merge the existing and new data. New keys will overwrite old keys.
+      const mergedParsedData = {
+        ...existingParsedData,
+        ...data.parsedData,
+      };
+
+      // 4. Update the `data` object to use the newly merged data
+      data.parsedData = mergedParsedData;
+
+      console.log("data ", data)
+    }
+
+    // 5. Perform the update with the potentially modified data object
     await appeal.update(data);
     return appeal;
   } catch (error) {

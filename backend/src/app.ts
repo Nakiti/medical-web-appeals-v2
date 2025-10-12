@@ -5,12 +5,12 @@ import {connectDb} from "./config/database.js"
 import { ApiError } from "./utils/ApiError.js"
 import mainRouter  from "./api/routes/index.js"
 import cookieParser from "cookie-parser"
-
+ 
 // load env vars 
 dotenv.config()  
-
+  
 const app: Express = express()
-const PORT = process.env.PORT || 4000
+const PORT = process.env.PORT || 4000 
 
 app.use(cors({
     origin: [process.env.FRONTEND_URL, "http://localhost:3000"],

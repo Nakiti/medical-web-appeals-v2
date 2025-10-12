@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { FiPlus } from "react-icons/fi";
+import { Plus } from "lucide-react";
 
 interface DoctorFormData {
   name: string;
@@ -71,7 +71,7 @@ const DoctorForm: React.FC<DoctorFormProps> = ({ onSubmit, isDraft }) => {
           type="submit"
           className="flex items-center gap-2 px-5 py-2 text-sm font-medium rounded-md border border-indigo-400 text-indigo-700 hover:bg-indigo-50 transition"
         >
-          <FiPlus size={16} />
+          <Plus size={16} />
           Add Doctor
         </button>
       </form>

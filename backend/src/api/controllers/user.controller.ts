@@ -24,7 +24,9 @@ export async function getUserProfileController(
     // Get the user's profile information
     const userProfile = await getUserProfile(userId);
 
-    if (!userProfile) {
+    const userData = userProfile?.toJSON()
+
+    if (!userData) {
       return res.status(404).json({ message: 'User not found' });
     }
 
@@ -32,11 +34,11 @@ export async function getUserProfileController(
     return res.status(200).json({
       message: 'User profile retrieved successfully',
       user: {
-        id: userProfile.id,
-        name: userProfile.name,
-        email: userProfile.email,
-        createdAt: userProfile.createdAt,
-        updatedAt: userProfile.updatedAt,
+        id: userData.id,
+        name: userData.name,
+        email: userData.email,
+        createdAt: userData.createdAt,
+        updatedAt: userData.updatedAt,
       },
     });
   } catch (error: any) {

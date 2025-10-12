@@ -17,9 +17,9 @@ export async function getAppealDocumentsController(
     // Get the userId from the authenticated user
     const userId = req.user?.id;
 
-    if (!userId) {
-      return res.status(401).json({ message: 'Unauthorized: User information not found' });
-    }
+    // if (!userId) {
+    //   return res.status(401).json({ message: 'Unauthorized: User information not found' });
+    // }
 
     // Validate the UUID parameter
     const validatedParams = uuidParamSchema.parse(req.params);

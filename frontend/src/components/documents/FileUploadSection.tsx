@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { FiUploadCloud } from "react-icons/fi";
+import { UploadCloud } from "lucide-react";
 import { useUploadAppealDocuments } from "@/hooks/useDocuments";
 
 interface FileUploadSectionProps {
@@ -62,7 +62,7 @@ const FileUploadSection: React.FC<FileUploadSectionProps> = ({
           }`}
           disabled={atUploadLimit}
         >
-          <FiUploadCloud size={20} className="mr-2" />
+          <UploadCloud size={20} className="mr-2" />
           {atUploadLimit ? "Max Uploads Reached" : "Click to Upload Files"}
         </button>
         <input

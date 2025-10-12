@@ -1,105 +1,84 @@
 "use client";
 import { useRouter } from "next/navigation";
-import React, { useContext, useState } from "react";
+import React, { useMemo, useState } from "react";
 import Link from "next/link";
-import { AlertTriangle, Edit, FileText, Loader2, Send, ArrowLeft } from 'lucide-react';
-
-// Assuming these are your actual imports
-import { AuthContext } from "@/app/context/authContext";
-import { FormContext } from "@/app/context/formContext";
-import { writeAppealLetter } from "@/app/services/gptServices";
-import DocumentDisplay from "../../components/documentDisplay";
-
-
-// A dedicated loading state component
-const LoadingState = () => (
-    <div className="flex flex-col items-center justify-center min-h-[70vh] text-center px-4">
-        <Loader2 className="w-12 h-12 text-indigo-600 animate-spin mb-6" />
-        <h2 className="text-2xl font-bold text-slate-900 mb-2">Crafting Your Appeal Letter</h2>
-        <p className="text-slate-600 max-w-md">
-            Our AI is analyzing your details to generate a personalized and persuasive appeal. This may take a moment.
-        </p>
-    </div>
-);
-
-// A reusable and improved component to display a section of the summary.
-const SummaryItem = ({ title, fields, inputs, appealId }) => {
-    const formatFieldName = (str) => str.replace(/([A-Z])/g, " $1").replace(/^./, c => c.toUpperCase());
-    const detailsPath = title.split(' ')[0].toLowerCase().replace('details', '').trim();
-
-    return (
-        <div className="bg-white border border-slate-200 rounded-xl shadow-sm">
-            <div className="p-5 flex justify-between items-center border-b border-slate-200">
-                <h3 className="text-lg font-semibold text-slate-800">{title}</h3>
-                <Link href={`/appeal/${appealId}/details/${detailsPath}`} className="flex items-center gap-1.5 text-sm font-medium text-indigo-600 hover:text-indigo-800">
-                    <Edit size={14} />
-                    Edit
-                </Link>
-            </div>
-            <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
-                {fields.map(field => (
-                    <div key={field}>
-                        <p className="text-xs text-slate-500">{formatFieldName(field)}</p>
-                        <p className="text-sm font-medium text-slate-700 break-words">{inputs[field] || "Not provided"}</p>
-                    </div>
-                ))}
-            </div>
-        </div>
-    );
-};
+import { AlertTriangle, Edit, Send, ArrowLeft } from 'lucide-react';
+import { useGetAppeal } from "@/hooks/useAppeals";
+import { useGetAppealDocuments } from "@/hooks/useDocuments";
+import LoadingState from "@/components/shared/LoadingState";
+import SummaryItem from "@/components/appeals/SummaryItem";
+import DocumentDisplay from "@/components/documents/DocumentDisplay";
+import { useGenerateAppealLetter } from "@/hooks/useAppeals";
+import { useAuth } from "@/providers/AuthProvider";
+import AuthModal from "@/components/appealForm/AuthModal";
 
 
-const Summary = () => {
+interface SummaryPageProps {
+    params: { appealId: string };
+}
+
+const Summary: React.FC<SummaryPageProps> = ({ params }) => {
    const router = useRouter();
-   const { currentUser } = useContext(AuthContext);
-   const { inputs, appealId, documents, setAppealLetter, setAppealLetterUrl } = useContext(FormContext);
+   const { appealId } = params;
    const [error, setError] = useState("");
    const [loading, setLoading] = useState(false);
-   const [disabled, setDisabled] = useState(false)
-   const [errorMessage, setErrorMessage] = useState("")
+   const [disabled, setDisabled] = useState(false);
+   const [errorMessage, setErrorMessage] = useState("");
+   const { appeal, isLoading: isAppealLoading } = useGetAppeal(appealId);
+   const { documents, isLoading: isDocumentsLoading } = useGetAppealDocuments(appealId);
+   const { generateLetter, isPending: isGenerating } = useGenerateAppealLetter()
+   const { isAuthenticated } = useAuth();
+   const [showAuthModal, setShowAuthModal] = useState(false);
+
+
+   const inputs = useMemo<Record<string, any>>(() => {
+      return (appeal?.appeal.parsedData as Record<string, any>) || {};
+   }, [appeal]);
 
    const sections = [
-   { title: "Patient Details", fields: ["firstName", "lastName", "dob", "ssn"] },
-   { title: "Letter Details", fields: ["insuranceProvider", "insuranceAddress", "physicianName", "physicianPhone", "physicianAddress", "physicianEmail"] },
-   { title: "Procedure Details", fields: ["claimNumber", "procedureName", "denialReason"] },
-   { title: "Additional Details", fields: ["additionalDetails"] },
+     { title: "Patient Details", fields: ["firstName", "lastName", "dob", "ssn"] },
+     { title: "Letter Details", fields: ["insuranceProvider", "insuranceAddress", "physicianName", "physicianPhone", "physicianAddress", "physicianEmail"] },
+     { title: "Procedure Details", fields: ["claimNumber", "procedureName", "denialReason"] },
+     { title: "Additional Details", fields: ["additionalDetails"] },
    ];
 
    const handleCreate = async () => {
-      setLoading(true);
-      setError(""); // Clear previous errors
-      let missingFields = [];
-      Object.entries(inputs).forEach(([key, value]) => {
-         if (!["dateFiled", "submitted", "status", "additionalDetails", "ssn", "notes"].includes(key)) {
-               if (!value || /^\s*$/.test(value)) {
+      console.log(isAuthenticated)
+      if (isAuthenticated) {
+         setLoading(true);
+         setError("");
+
+         const missingFields: string[] = [];
+         Object.entries(inputs).forEach(([key, value]) => {
+            if (!["dateFiled", "submitted", "status", "additionalDetails", "ssn", "notes", "userId"].includes(key)) {
+               if (!value || /^\s*$/.test(String(value))) {
                   missingFields.push(key);
                }
+            }
+         });
+
+         if (missingFields.length > 0) {
+            const formatFieldName = (str: string) => str.replace(/([A-Z])/g, " $1").replace(/^./, c => c.toUpperCase());
+            const formattedFields = missingFields.map(formatFieldName).join(", ");
+            setError(`Please fill in all required fields: ${formattedFields}`);
+            setLoading(false);
+            window.scrollTo(0, 0);
+            return;
          }
-      });
 
-      if (missingFields.length > 0) {
-         const formatFieldName = str => str.replace(/([A-Z])/g, " $1").replace(/^./, c => c.toUpperCase());
-         const formattedFields = missingFields.map(formatFieldName).join(", ");
-         setError(`Please fill in all required fields: ${formattedFields}`);
+         generateLetter({parsedData: inputs, appealId}, {
+            onSuccess: () => {
+               router.push(`/appeal/${appealId}/review`);
+               console.log("Appeal letter generated successfully");
+            },
+            onError: (err: Error) => {
+               console.error("Error generating appeal letter:", err);
+         }})
          setLoading(false);
-         window.scrollTo(0, 0); // Scroll to top to show error
-         return;
-      }
-
-      try {
-         const { file, url } = await writeAppealLetter(inputs);
-         setAppealLetter(file);
-         setAppealLetterUrl(url);
-         router.push(`/appeal/${appealId}/review`);
-      } catch (err) {
-         console.error("Error submitting appeal:", err);
-         setError("An error occurred while generating the appeal letter. Please try again.");
-         setErrorMessage(`${err.error}. Resets at ${new Date(err.usage.resetsAt).toLocaleString("en-US")}`)
-         setDisabled(true)
-         setLoading(false);
-         window.scrollTo(0, 0);
-      }
+   } else {
+      setShowAuthModal(true);
    };
+   }
 
    if (loading) {
       return <LoadingState />;
@@ -127,6 +106,12 @@ const Summary = () => {
                   </div>
                )}
 
+              <AuthModal
+                 showModal={showAuthModal}
+                 onClose={() => setShowAuthModal(false)}
+                 redirectUrl={`/appeal/${appealId}/summary`}
+              />
+
                {disabled && (
                   <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
                      <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
@@ -152,9 +137,9 @@ const Summary = () => {
                   <div className="p-5">
                      {documents && documents.length > 0 ? (
                            <ul className="space-y-3">
-                              {documents.map((item, index) => (
-                                 <li key={item.id || index}>
-                                       <DocumentDisplay item={item} />
+                              {documents.map((doc) => (
+                                 <li key={doc.id}>
+                                       <DocumentDisplay document={doc} />
                                  </li>
                               ))}
                            </ul>
@@ -186,4 +171,4 @@ const Summary = () => {
    );
 };
 
-export default Summary;
+export default Summary

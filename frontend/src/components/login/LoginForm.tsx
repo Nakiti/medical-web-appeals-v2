@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { FormField } from '@/components/shared/FormField';
 import { ErrorMessage } from '@/components/shared/ErrorMessage';
 import { LinkText } from '@/components/shared/LinkText';
+import { useRouter } from 'next/navigation';
 
 // Define the login form schema
 const loginSchema = z.object({
@@ -25,10 +26,10 @@ const loginSchema = z.object({
 
 type LoginFormData = z.infer<typeof loginSchema>;
 
-export const LoginForm: React.FC = () => {
+export const LoginForm: React.FC = ({redirectUrl}) => {
   const { login, isLoading } = useAuth();
   const [error, setError] = useState<string | null>(null);
-
+  const router = useRouter();
   const {
     register,
     handleSubmit,
@@ -41,6 +42,7 @@ export const LoginForm: React.FC = () => {
     try {
       setError(null);
       await login(data);
+      router.push(redirectUrl);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Login failed. Please try again.');
     }

@@ -6,7 +6,8 @@ import {
   deleteAppeal, 
   parseDenialLetter, 
   generateAppealLetter, 
-  createAppeal 
+  createAppeal,
+  generatePDFForAppeal
 } from '@/lib/services/appeals.service';
 import { GetAppealsQueryInput, UpdateAppealInput, GenerateLetterInput, CreateAppealInput } from '@/lib/schemas/appeals.schema';
 
@@ -94,7 +95,7 @@ export const useUpdateAppeal = () => {
   const queryClient = useQueryClient();
   
   const { 
-    mutate: update, 
+    mutate, 
     isPending, 
     isError, 
     error,
@@ -114,7 +115,7 @@ export const useUpdateAppeal = () => {
   });
 
   return {
-    updateAppeal: update,
+    mutate,
     isPending,
     isError,
     error,
@@ -178,7 +179,7 @@ export const useDeleteAppeal = () => {
  */
 export const useParseDenialLetter = () => {
   const { 
-    mutate: parseLetter, 
+    mutate, 
     isPending, 
     isError, 
     error,
@@ -195,7 +196,7 @@ export const useParseDenialLetter = () => {
   });
 
   return {
-    parseLetter,
+    mutate,
     isPending,
     isError,
     error,
@@ -241,6 +242,33 @@ export const useGenerateAppealLetter = () => {
   };
 };
 
+
+export const useGeneratePDFForAppeal = () => {
+  const { 
+    mutate: generatePDF, 
+    isPending, 
+    isError, 
+    error, 
+    isSuccess 
+  } = useMutation({
+    mutationFn: generatePDFForAppeal,
+    
+    onSuccess: (data) => {
+      console.log('PDF generated successfully:', data.message);
+    },
+    onError: (error) => {
+      console.error('PDF generation failed:', error.message);
+    },
+  });
+
+  return {
+    generatePDF,
+    isPending,
+    isError,
+    error,
+    isSuccess
+  };
+};
 /**
  * A custom React hook that provides a function to create a new appeal and manages the state of the API call.
  * It leverages TanStack Query's `useMutation` for handling loading, success, and error states automatically.

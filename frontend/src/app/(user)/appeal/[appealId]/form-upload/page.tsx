@@ -15,6 +15,21 @@ import { documentUploadSchema, type DocumentUploadInput } from "@/lib/schemas/ap
 // TODO: Create extractAppealDetails service
 // TODO: Create document processing service
 
+// Safely extract parsed data from the parseLetter response
+function extractParsedData(response: unknown) {
+  if (
+    typeof response === "object" &&
+    response !== null &&
+    "parsedData" in response &&
+    typeof (response as any).parsedData === "object" &&
+    (response as any).parsedData !== null &&
+    "parsedData" in (response as any).parsedData
+  ) {
+    return (response as any).parsedData.parsedData;
+  }
+  return undefined;
+}
+
 interface FormUploadPageProps {
   params: { appealId: string };
 }
@@ -24,15 +39,13 @@ const FormUploadPage: React.FC<FormUploadPageProps> = ({ params }) => {
   const { appealId } = params;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [documents, setDocuments] = useState<Array<{ id: number; file: File }>>([]);
-  const [loading, setLoading] = useState(false);
 
   // 1. Fetch the current appeal data from the backend
   // const { appeal: appealData, isLoading, error } = useGetAppeal(appealId);
 
   // 2. Setup the mutation to save the form data
-  const { updateAppeal, isPending: isSaving } = useUpdateAppeal();
-  const {parseLetter} = useParseDenialLetter()
-
+  const { mutate: updateAppeal, isPending: isUpdating } = useUpdateAppeal();
+  const {mutate: parseLetter, isPending: isParsing} = useParseDenialLetter()
   // 3. Initialize react-hook-form to manage the form state with proper typing
   const { 
     register, 
@@ -54,6 +67,8 @@ const FormUploadPage: React.FC<FormUploadPageProps> = ({ params }) => {
     uploadFile 
   } = useFileUpload();
 
+  const isBusy = isParsing || isUpdating || isUploading;
+
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -72,34 +87,43 @@ const FormUploadPage: React.FC<FormUploadPageProps> = ({ params }) => {
 
   const handleNext = async (formData: DocumentUploadInput) => {
     if (documents.length > 0) {
-      try {
-        setLoading(true);
-        console.log(documents)
-        parseLetter(documents[0].file)
-        
-        // TODO: Implement extractAppealDetails service
-        // const response = await extractAppealDetails(documents);
-        // console.log("input from backend ", response.content);
-        
-        // Save the form data
-        // updateAppeal({ 
-        //   id: appealId, 
-        //   data: { parsedData: formData as Record<string, any> } 
-        // }, {
-        //   onSuccess: () => {
-        //     router.push(`/appeal/${appealId}/appealer-details`);
-        //   },
-        //   onError: (err: Error) => {
-        //     console.error("Failed to save document data:", err);
-        //   },
-        // });
-      } catch (err) {
-        console.error("Error processing documents:", err);
-      } finally {
-        setLoading(false);
-      }
+      const file = documents[0].file;
+      
+      // Call the mutate function
+      parseLetter(file, {
+        onSuccess: (response) => {
+          // This callback runs after the parsing is successful
+          console.log("Response from parsing:", response);
+          const parsedData = extractParsedData(response);
+          console.log("parsedData", parsedData)
+          if (parsedData === undefined) {
+            console.error("Unexpected parse response shape", response);
+            return;
+          }
+  
+          updateAppeal({
+            id: appealId,
+            data: { parsedData: parsedData } // Use the data from the first mutation
+          }, {
+            onSuccess: (res) => {
+              // Navigate only after the final step succeeds
+              console.log("Response from updating appeal:", res);
+              router.push(`/appeal/${appealId}/appealer-details`);
+            },
+            onError: (err) => {
+              console.error("Failed to update appeal:", err);
+              // TODO: Show an error toast to the user
+            }
+          });
+        },
+        onError: (err) => {
+          console.error("Error parsing document:", err);
+          // TODO: Show an error toast to the user
+        }
+      });
     } else {
-      // router.push(`/appeal/${appealId}/appealer-details`);
+      // Handle case with no documents if needed
+      router.push(`/appeal/${appealId}/appealer-details`);
     }
   };
 
@@ -116,12 +140,12 @@ const FormUploadPage: React.FC<FormUploadPageProps> = ({ params }) => {
   //   return <div>Error loading appeal data. Please try again.</div>;
   // }
 
-  if (loading || isUploading) {
+  if (isBusy) {
     return (
       <div className="flex flex-col items-center justify-center h-screen text-center px-4">
         <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-6" />
         <h2 className="text-xl font-semibold text-gray-800 mb-2">
-          {loading ? "Parsing documents..." : "Uploading file..."}
+          {isParsing ? "Parsing document..." : isUpdating ? "Updating appeal..." : "Uploading file..."}
         </h2>
       </div>
     );
@@ -144,12 +168,14 @@ const FormUploadPage: React.FC<FormUploadPageProps> = ({ params }) => {
             style={{ display: 'none' }}
             onChange={handleFileUpload}
             accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+            disabled={isBusy}
           />
 
           <Button
             type="button"
             onClick={handleUploadClick}
             className="flex items-center justify-center w-full rounded-full p-3 bg-blue-500 hover:bg-blue-600 text-white font-semibold text-sm sm:text-base"
+            disabled={isBusy}
           >
             <span>📁</span>
             <span className="ml-3">Upload Files</span>
@@ -167,6 +193,7 @@ const FormUploadPage: React.FC<FormUploadPageProps> = ({ params }) => {
             variant="secondary"
             onClick={handleManualEntry}
             className="flex items-center justify-center w-full rounded-full p-3 bg-gray-500 hover:bg-gray-600 text-white font-semibold text-sm sm:text-base"
+            disabled={isBusy}
           >
             <span>✏️</span>
             <span className="ml-3">Enter Details Manually</span>
@@ -193,6 +220,7 @@ const FormUploadPage: React.FC<FormUploadPageProps> = ({ params }) => {
                 variant="destructive"
                 size="sm"
                 onClick={() => handleRemove(item.id)}
+                disabled={isBusy}
               >
                 Remove
               </Button>
@@ -202,10 +230,10 @@ const FormUploadPage: React.FC<FormUploadPageProps> = ({ params }) => {
           {/* Next Button */}
           <Button
             type="submit"
-            disabled={isSaving}
+            disabled={isUpdating}
             className="w-full mt-16 flex-1 text-center rounded-full py-3 px-6 bg-gradient-to-r from-indigo-500 to-blue-500 text-white font-semibold text-base hover:opacity-90 transition duration-200 shadow-md"
           >
-            {isSaving ? "Saving..." : "Next"}
+            {isUpdating ? "Saving..." : "Next"}
           </Button>
         </form>
       </div>

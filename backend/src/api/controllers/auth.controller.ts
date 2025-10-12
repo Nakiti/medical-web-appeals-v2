@@ -52,17 +52,25 @@ export async function loginUserController(
 ) {
   try {
     // Call the service to authenticate the user
-    const token = await loginUser(req.body);
+    const {token, user} = await loginUser(req.body);
 
     // If no token returned, credentials are invalid
     if (!token) {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
+    res.cookie('auth_token', token, {
+      httpOnly: true, // Prevents client-side JS from accessing the cookie
+      secure: process.env.NODE_ENV === 'production', // Only send over HTTPS in production
+      sameSite: 'strict', // Helps prevent CSRF attacks
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours, matching your JWT expiry
+      path: '/',
+    });
+
     // Send back the token
     return res.status(200).json({
       message: 'Login successful',
-      token,
+      user,
     });
   } catch (error: any) {
     console.error('Error in loginUserController:', error);

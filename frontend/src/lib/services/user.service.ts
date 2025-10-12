@@ -26,7 +26,8 @@ interface UpdateUserInput {
  */
 export const getUserProfile = async (): Promise<User> => {
   const response = await apiClient.get<User>('/users/me');
-  return response.data;
+  console.log(response)
+  return response.data.user;
 };
 
 /**

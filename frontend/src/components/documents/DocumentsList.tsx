@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { FiChevronDown, FiChevronUp } from "react-icons/fi";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import { Document } from "@/lib/services/documents.service";
 import DocumentItem from "./DocumentItem";
 import { useDeleteDocument } from "@/hooks/useDocuments";
@@ -36,7 +36,7 @@ const DocumentsList: React.FC<DocumentsListProps> = ({
             onClick={() => setIsExpanded((prev) => !prev)}
             className="flex items-center text-sm text-indigo-600 hover:underline"
           >
-            {isExpanded ? <FiChevronUp /> : <FiChevronDown />}
+            {isExpanded ? <ChevronUp /> : <ChevronDown />}
             {isExpanded ? "Hide Files" : "Show Files"}
           </button>
         )}

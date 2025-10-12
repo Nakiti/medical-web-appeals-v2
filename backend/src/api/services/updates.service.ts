@@ -9,7 +9,7 @@ import { findAppealById } from '../repositories/appeal.repository.js';
  * @returns An array of update objects if the user owns the appeal.
  * @throws Will throw an error if the user is not authorized or if the database query fails.
  */
-export async function getUpdatesForAppeal(
+export async function getUpdatesForAppeal( 
   appealId: string,
   userId: string
 ): Promise<any[]> {

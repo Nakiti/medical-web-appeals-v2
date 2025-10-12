@@ -1,5 +1,5 @@
-import { BlobServiceClient, BlockBlobClient } from '@azure/storage-blob';
-import { DocumentAnalysisClient } from '@azure/ai-form-recognizer';
+import { BlobSASPermissions, BlobServiceClient, BlockBlobClient, SASProtocol } from '@azure/storage-blob';
+import { DocumentAnalysisClient, AzureKeyCredential } from '@azure/ai-form-recognizer';
 
 /**
  * Azure Blob Storage service for file uploads
@@ -32,7 +32,11 @@ export class AzureBlobService {
       await containerClient.createIfNotExists();
       
       const blockBlobClient = containerClient.getBlockBlobClient(fileName);
-      await blockBlobClient.uploadData(fileBuffer);
+      await blockBlobClient.uploadData(fileBuffer, {
+        blobHTTPHeaders: {
+          blobContentDisposition: "inline"
+        }
+      });
       
       return blockBlobClient.url;
     } catch (error) {
@@ -49,14 +53,18 @@ export class AzureBlobService {
    */
   async uploadGeneratedPDF(pdfBuffer: Buffer, fileName: string): Promise<string> {
     try {
-      const containerName = process.env.AZURE_GENERATED_CONTAINER_NAME || 'generated-appeals';
+      const containerName = this.containerName;
       const containerClient = this.blobServiceClient.getContainerClient(containerName);
       
       // Ensure container exists
       await containerClient.createIfNotExists();
       
       const blockBlobClient = containerClient.getBlockBlobClient(fileName);
-      await blockBlobClient.uploadData(pdfBuffer);
+      await blockBlobClient.uploadData(pdfBuffer, {
+        blobHTTPHeaders: {
+          blobContentDisposition: "inline"
+        }
+      });
       
       return blockBlobClient.url;
     } catch (error) {
@@ -65,6 +73,32 @@ export class AzureBlobService {
     }
   }
 
+    /**
+   * Generates a SAS URL that provides temporary read access to a blob.
+   * @param containerName - The name of the container.
+   * @param fileName - The name of the blob.
+   * @returns A URL with a SAS token valid for a limited time.
+   */
+  async generateSasUrl(fileName: string): Promise<string> {
+    const containerClient = this.blobServiceClient.getContainerClient(this.containerName);
+    const blockBlobClient = containerClient.getBlockBlobClient(fileName);
+
+    // Define the SAS options
+    const sasOptions = {
+        containerName: this.containerName,
+        blobName: fileName,
+        startsOn: new Date(),
+        // Set the URL to be valid for 1 hour (adjust as needed)
+        expiresOn: new Date(new Date().valueOf() + 3600 * 1000), 
+        permissions: BlobSASPermissions.parse("r"), // "r" for read-only access
+        protocol: SASProtocol.Https, // Enforce HTTPS
+        contentDisposition: `inline; filename="${fileName}"`
+    };
+
+    // Generate and return the full URL with the SAS token
+    const sasTokenUrl = await blockBlobClient.generateSasUrl(sasOptions);
+    return sasTokenUrl;
+  }
 
   /**
    * Delete a file from Azure Blob Storage
@@ -106,8 +140,10 @@ export class AzureDocumentService {
     if (!endpoint || !apiKey) {
       throw new Error('AZURE_FORM_RECOGNIZER_ENDPOINT and AZURE_FORM_RECOGNIZER_API_KEY environment variables are required');
     }
+
+    const credential = new AzureKeyCredential(apiKey)
     
-    this.documentAnalysisClient = new DocumentAnalysisClient(endpoint, { apiKey } as any);
+    this.documentAnalysisClient = new DocumentAnalysisClient(endpoint, credential);
   } 
 
   /**

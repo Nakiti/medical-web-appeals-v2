@@ -57,8 +57,10 @@ export async function loginUser(
       return null;
     }
 
+    const userData = user.toJSON()
+
     // 3. Compare the provided password with the stored hash
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+    const isPasswordValid = await bcrypt.compare(password, userData.password);
     
     // 4. If password doesn't match, return null
     if (!isPasswordValid) {
@@ -67,16 +69,20 @@ export async function loginUser(
 
     // 5. Create JWT payload
     const payload = {
-      id: user.id,
-      email: user.email,
+      id: userData.id,
+      email: userData.email,
     };
 
     // 6. Sign the token with JWT_SECRET
     const token = jwt.sign(payload, process.env.JWT_SECRET!, {
       expiresIn: '24h', // Token expires in 24 hours
     });
+    const { password: _, ...userWithoutPassword } = user.toJSON();
 
-    return token;
+    return {  
+      user: userWithoutPassword,
+      token,
+    };
   } catch (error) {
     console.error('Error in loginUser service:', error);
     throw new Error('Failed to authenticate user');

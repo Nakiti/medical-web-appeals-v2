@@ -1,6 +1,6 @@
 "use client";
 
-import { FiFileText } from "react-icons/fi";
+import { FileText } from "lucide-react";
 
 interface Document {
   name: string;
@@ -30,7 +30,7 @@ const DocumentList: React.FC<DocumentListProps> = ({ documents }) => {
             key={idx}
             className="flex items-center text-sm text-gray-600 gap-2 border-b border-dashed border-slate-300 py-1"
           >
-            <FiFileText size={16} />
+            <FileText size={16} />
             {file.name}
             <span className="ml-auto text-xs text-gray-400">
               Uploaded: {file.uploadedAt}

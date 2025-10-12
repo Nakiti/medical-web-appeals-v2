@@ -1,6 +1,7 @@
 import { type Request, type Response } from 'express';
-import { parseDenialLetter, generateAppealLetterText, saveAppeal } from '../services/appeals.service.js';
-import { generateLetterSchema, createAppealSchema, type GenerateLetterInput, type CreateAppealInput } from '../schemas/appeals.schemas.js';
+import { parseDenialLetter, generateAppealLetterText, saveAppeal, generatePDFForAppeal } from '../services/appeals.service.js';
+import { generateLetterSchema, createAppealSchema, type GenerateLetterInput, type CreateAppealInput, type UuidParamInput } from '../schemas/appeals.schemas.js';
+import { azureBlobService } from '../services/azure.service.js';
 
 /**
  * Handles the logic for parsing a denial letter using Azure Document Intelligence.
@@ -54,23 +55,27 @@ export async function parseLetterController(
  * @param res - The Express response object used to send back the result.
  */
 export async function generateLetterController(
-  req: Request<{}, {}, GenerateLetterInput>,
+  req: Request<UuidParamInput, {}, GenerateLetterInput>,
   res: Response
 ) {
   try {
     // Get the userId from the authenticated user
     const userId = req.user?.id;
 
-    if (!userId) {
-      return res.status(401).json({ message: 'Unauthorized: User information not found' });
-    }
+    // if (!userId) {
+    //   return res.status(401).json({ message: 'Unauthorized: User information not found' });
+    // }
 
     // Validate the request body
-    const validatedData = generateLetterSchema.parse(req.body);
+    // const validatedData = generateLetterSchema.parse(req.body);
 
     // Call the service to generate the appeal letter
-    const generatedText = await generateAppealLetterText(validatedData);
+    console.log("user id ", userId)
+    console.log("req.body ", req.body)
+    console.log("req.params.appealId ", req.params.appealId)
+    const generatedText = await generateAppealLetterText(req.body, req.params.appealId); 
 
+    console.log("generated text ", generatedText)
     // Send back the generated text
     return res.status(200).json({
       message: 'Appeal letter generated successfully',
@@ -94,6 +99,38 @@ export async function generateLetterController(
   }
 }
 
+export async function generatePDFController(
+  req: Request<UuidParamInput, {}, { letterText: string }>, // Expect 'letterText' in the request body
+  res: Response
+) {
+  try {
+    const { appealId } = req.params;
+    const { letterText } = req.body;
+
+    // 1. Basic validation: Ensure the final letter text was provided
+    if (!letterText) {
+      return res.status(400).json({ message: 'Letter text is required.' });  
+    }
+
+    // 2. Call the service to perform the core logic
+    const fileName = await generatePDFForAppeal(appealId, letterText);
+
+    if (!fileName) {
+      // This case handles if the appeal wasn't found in the service
+      return res.status(404).json({ message: 'Appeal not found.' });
+    }
+
+    const sasUrl = await azureBlobService.generateSasUrl(fileName);
+
+    // 3. Send a success response with the URL of the generated PDF
+    res.status(200).json({ sasUrl });
+
+  } catch (error) {
+    console.error('Error in generatePDFController:', error);
+    res.status(500).json({ message: 'Failed to generate PDF.' });
+  }
+}
+
 /**
  * Handles the logic for saving a complete appeal with generated PDF.
  * This endpoint is protected and requires authentication.
@@ -107,7 +144,7 @@ export async function createAppealController(
 ) {
   try {
     // No authentication required - userId is null for anonymous users
-    const userId = null;
+    const userId = req.user?.id || null;
 
     // Validate the request body
     // const validatedData = createAppealSchema.parse(req.body);

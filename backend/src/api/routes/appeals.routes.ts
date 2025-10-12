@@ -1,9 +1,9 @@
 import { Router } from 'express';
 import { getUserAppealsController, getAppealByIdController, updateAppealController, deleteAppealController } from '../controllers/appeals.controller.js';
-import { parseLetterController, generateLetterController, createAppealController } from '../controllers/appeals-additional.controller.js';
+import { parseLetterController, generateLetterController, createAppealController, generatePDFController } from '../controllers/appeals-additional.controller.js';
 import { getAppealDocumentsController, uploadAppealDocumentsController } from '../controllers/appeals-documents.controller.js';
 import { getAppealUpdatesController, createAppealUpdateController } from '../controllers/updates.controller.js';
-import { isAuthenticated } from '../middleware/isAuthenticated.js';
+import { decodeUserMiddleware, isAuthenticated, requireAuthMiddleware } from '../middleware/isAuthenticated.js';
 import { validate } from '../middleware/validate.js';
 import { updateAppealSchema, generateLetterSchema, createAppealSchema } from '../schemas/appeals.schemas.js';
 import { createUpdateSchema } from '../schemas/updates.schemas.js';
@@ -53,7 +53,7 @@ router.get('/:id', getAppealByIdController);
  * PUT /api/appeals/:id
  * Update an appeal (no authentication required)
  */
-router.put('/:id', updateAppealController);
+router.put('/:id', decodeUserMiddleware, updateAppealController);
 
 /**
  * DELETE /api/appeals/:id
@@ -75,7 +75,15 @@ router.post('/parse', upload.single('denialLetter'), parseLetterController);
  * Generate an appeal letter using OpenAI
  * Protected route - requires authentication and validation
  */
-router.post('/generate-letter', validate(generateLetterSchema), generateLetterController);
+router.post('/generate-letter/:appealId', isAuthenticated, generateLetterController);
+
+/**
+ * POST /api/appeals/generate-pdf
+ * Generate a PDF for an appeal
+ * Protected route - requires authentication and validation
+ */
+router.post('/generate-pdf/:appealId', isAuthenticated, generatePDFController);
+
 
 /**
  * POST /api/appeals

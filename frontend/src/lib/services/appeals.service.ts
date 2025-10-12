@@ -34,6 +34,7 @@ export interface GeneratedLetterResponse {
  */
 export const getUserAppeals = async (query?: GetAppealsQueryInput): Promise<Appeal[]> => {
   const response = await apiClient.get<Appeal[]>('/appeals', { params: query });
+  console.log("appeals ", response.data)
   return response.data;
 };
 
@@ -58,6 +59,7 @@ export const getAppealById = async (id: string): Promise<Appeal> => {
  * @returns {Promise<Appeal>} A promise that resolves with the updated appeal data.
  */
 export const updateAppeal = async (id: string, updateData: UpdateAppealInput): Promise<Appeal> => {
+  console.log("updateData", updateData)
   const response = await apiClient.put<Appeal>(`/appeals/${id}`, updateData);
   return response.data;
 };
@@ -89,6 +91,7 @@ export const parseDenialLetter = async (file: File): Promise<ParsedLetterRespons
       'Content-Type': 'multipart/form-data',
     },
   });
+  console.log("response from backend ", response)
   return response.data;
 };
 
@@ -100,9 +103,16 @@ export const parseDenialLetter = async (file: File): Promise<ParsedLetterRespons
  * @returns {Promise<GeneratedLetterResponse>} A promise that resolves with the generated letter.
  */
 export const generateAppealLetter = async (data: GenerateLetterInput): Promise<GeneratedLetterResponse> => {
-  const response = await apiClient.post<GeneratedLetterResponse>('/appeals/generate-letter', data);
+  const response = await apiClient.post<GeneratedLetterResponse>(`/appeals/generate-letter/${data.appealId}`, data);
   return response.data;
 };
+
+export const generatePDFForAppeal = async (data): Promise<GeneratedLetterResponse> => {
+  const response = await apiClient.post<GeneratedLetterResponse>(`/appeals/generate-pdf/${data.appealId}`, { letterText: data.letterText });
+  console.log("response from backend ", response)
+  return response.data;
+};
+
 
 /**
  * Makes an API call to save a complete appeal with generated PDF.

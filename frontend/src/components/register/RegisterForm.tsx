@@ -36,7 +36,7 @@ const registerSchema = z.object({
 
 type RegisterFormData = z.infer<typeof registerSchema>;
 
-export const RegisterForm: React.FC = () => {
+export const RegisterForm: React.FC = ({redirectUrl}) => {
   const { login } = useAuth();
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -63,7 +63,7 @@ export const RegisterForm: React.FC = () => {
           email: data.email,
           password: data.password,
         });
-        router.push('/');
+        router.push(redirectUrl);
       } catch (loginError) {
         // If auto-login fails, redirect to login page
         router.push('/login');

@@ -27,7 +27,7 @@ const ClaimNumberPage: React.FC<ClaimNumberPageProps> = ({ params }) => {
   // const { appeal: appealData, isLoading, error: fetchError } = useGetAppeal(appealId);
 
   // 2. Setup the mutation to save the form data
-  const { updateAppeal, isPending: isSaving } = useUpdateAppeal();
+  const { mutate: updateAppeal, isPending: isSaving } = useUpdateAppeal();
 
   // 3. Initialize react-hook-form to manage the form state with proper typing
   const { 

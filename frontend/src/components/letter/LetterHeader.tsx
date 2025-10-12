@@ -1,6 +1,6 @@
 "use client";
 
-import { FiRefreshCcw } from "react-icons/fi";
+import { RefreshCcw } from "lucide-react";
 
 interface LetterHeaderProps {
   title: string;
@@ -46,7 +46,7 @@ const LetterHeader: React.FC<LetterHeaderProps> = ({
                 : "bg-gradient-to-r from-indigo-500 to-blue-500 hover:opacity-90"
             }`}
           >
-            <FiRefreshCcw size={16} className={isLoading ? "animate-spin" : ""} />
+            <RefreshCcw size={16} className={isLoading ? "animate-spin" : ""} />
             {isLoading ? "Generating..." : "Regenerate"}
           </button>
 

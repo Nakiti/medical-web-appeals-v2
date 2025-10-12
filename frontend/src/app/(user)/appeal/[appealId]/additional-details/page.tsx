@@ -22,7 +22,7 @@ const AdditionalDetailsPage: React.FC<AdditionalDetailsPageProps> = ({ params })
   const { appeal: appealData, isLoading, error } = useGetAppeal(appealId);
 
   // 2. Setup the mutation to save the form data
-  const { updateAppeal, isPending: isSaving } = useUpdateAppeal();
+  const { mutate: updateAppeal, isPending: isSaving } = useUpdateAppeal();
 
   // 3. Initialize react-hook-form to manage the form state with proper typing
   const { 
@@ -36,9 +36,9 @@ const AdditionalDetailsPage: React.FC<AdditionalDetailsPageProps> = ({ params })
 
   // 4. Populate the form with data once it's fetched from the backend
   useEffect(() => {
-    if (appealData?.parsedData) {
+    if (appealData) {
       // The `reset` function populates the form with the fetched data
-      reset(appealData.parsedData as AdditionalDetailsInput);
+      reset(appealData.appeal.parsedData as AdditionalDetailsInput);
     }
   }, [appealData, reset]);
 
@@ -50,7 +50,7 @@ const AdditionalDetailsPage: React.FC<AdditionalDetailsPageProps> = ({ params })
     }, {
       onSuccess: () => {
         // Only navigate to the next step after the data is successfully saved
-        router.push(`/appeal/${appealId}/letter-details`);
+        router.push(`/appeal/${appealId}/summary`);
       },
       onError: (err: Error) => {
         console.error("Failed to save appeal details:", err);

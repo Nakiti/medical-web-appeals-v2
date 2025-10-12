@@ -10,6 +10,7 @@ import { ApiError } from '../../utils/ApiError.js';
 export const validate = (schema: ZodObject) =>
   (req: Request, res: Response, next: NextFunction) => {
     try {
+      console.log("Validating request body:", req.body);
       // Parse and validate the request
       schema.parse({
         body: req.body,

@@ -1,10 +1,15 @@
+"use client"
 import { PageLayout } from '@/components/shared/PageLayout';
-import { RegisterLayout } from '@/components/register/RegisterLayout';
+import { useSearchParams } from 'next/navigation';
+import { RegisterLayout } from '@/components/register';
 
 const Register = () => {
+  const searchParams = useSearchParams();
+  const redirectUrl = searchParams.get('redirectUrl');
+
   return (
     <PageLayout className="min-h-screen flex justify-center items-start bg-gray-50">
-      <RegisterLayout />
+      <RegisterLayout redirectUrl={redirectUrl}/>
     </PageLayout>
   );
 };

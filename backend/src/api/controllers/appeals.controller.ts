@@ -12,7 +12,7 @@ import { getAppealsQuerySchema, updateAppealSchema, uuidParamSchema, generateLet
 export async function getUserAppealsController(
   req: Request<{}, {}, {}, GetAppealsQueryInput>,
   res: Response
-) {
+) { 
   try {
     // Get the userId from the authenticated user
     const userId = req.user?.id;
@@ -72,9 +72,9 @@ export async function getAppealByIdController(
     // Get the userId from the authenticated user
     const userId = req.user?.id;
 
-    if (!userId) {
-      return res.status(401).json({ message: 'Unauthorized: User information not found' });
-    }
+    // if (!userId) {
+    //   return res.status(401).json({ message: 'Unauthorized: User information not found' });
+    // }
 
     // Validate the UUID parameter
     const validatedParams = uuidParamSchema.parse(req.params);
@@ -128,17 +128,21 @@ export async function updateAppealController(
 ) {
   try {
     // No authentication required - userId is null for anonymous users
-    const userId = null;
+    const userId = req.user?.id;
 
     // Validate the UUID parameter
     const validatedParams = uuidParamSchema.parse(req.params);
     const appealId = validatedParams.id;
 
     // Validate the update data
-    const validatedUpdateData = updateAppealSchema.parse(req.body);
+    console.log("user id ", userId)
+    console.log("req.body", {...req.body.parsedData, userId})
+    // const validatedUpdateData = updateAppealSchema.parse(req.body.parsedData);
+
+    // console.log("validatedUpdateData", validatedUpdateData)
 
     // Call the service to update the appeal
-    const updatedAppeal = await updateAppeal(appealId, userId, validatedUpdateData);
+    const updatedAppeal = await updateAppeal(appealId, userId, req.body.parsedData);
 
     if (!updatedAppeal) {
       return res.status(404).json({ message: 'Appeal not found' });

@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { RegisterForm } from './RegisterForm';
 import { SuccessMessage } from './SuccessMessage';
 
-export const RegisterLayout: React.FC = () => {
+export const RegisterLayout: React.FC = ({redirectUrl}) => {
   const [isSuccess, setIsSuccess] = useState(false);
 
   if (isSuccess) {
@@ -18,7 +18,7 @@ export const RegisterLayout: React.FC = () => {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <RegisterForm />
+        <RegisterForm redirectUrl={redirectUrl}/>
       </CardContent>
     </Card>
   );

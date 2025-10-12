@@ -1,6 +1,6 @@
 "use client";
 
-import { FiFileText, FiTrash2 } from "react-icons/fi";
+import { FileText, Trash2 } from "lucide-react";
 import { Document } from "@/lib/services/documents.service";
 import { useDeleteDocument } from "@/hooks/useDocuments";
 
@@ -25,7 +25,7 @@ const DocumentItem: React.FC<DocumentItemProps> = ({
 
   return (
     <div className="flex items-center text-sm text-slate-700 bg-slate-50 p-4 border rounded-md hover:bg-slate-100">
-      <FiFileText size={18} className="mr-2 text-slate-500" />
+      <FileText size={18} className="mr-2 text-slate-500" />
       <span
         className="truncate cursor-pointer flex-1"
         onClick={handleView}
@@ -42,7 +42,7 @@ const DocumentItem: React.FC<DocumentItemProps> = ({
         className="text-red-500 hover:text-red-700 transition disabled:opacity-50"
         title="Delete document"
       >
-        <FiTrash2 size={16} />
+        <Trash2 size={16} />
       </button>
     </div>
   );

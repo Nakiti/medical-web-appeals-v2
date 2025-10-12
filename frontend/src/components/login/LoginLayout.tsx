@@ -2,7 +2,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LoginForm } from './LoginForm';
 
-export const LoginLayout: React.FC = () => {
+export const LoginLayout: React.FC = ({redirectUrl}) => {
   return (
     <Card className="w-full mt-16 h-full max-w-md">
       <CardHeader>
@@ -11,7 +11,7 @@ export const LoginLayout: React.FC = () => {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <LoginForm />
+        <LoginForm redirectUrl={redirectUrl}/> // remove prop drilling
       </CardContent>
     </Card>
   );

@@ -12,7 +12,7 @@ import { getUserProfile, updateUserProfile, deleteUserAccount } from '@/lib/serv
  * - `error`: The error object if the profile request failed.
  * - `refetch`: A function to manually refetch the profile data.
  */
-export const useUserProfile = () => {
+export const useGetUserProfile = () => {
   const { 
     data, 
     isLoading, 
